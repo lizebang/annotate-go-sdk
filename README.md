@@ -10,13 +10,15 @@
 
 我使用的是 vscode，你们也可以使用它，同时推荐安装 [Go](https://marketplace.visualstudio.com/items?itemName=ms-vscode.Go)、[todo-highlight](https://marketplace.visualstudio.com/items?itemName=wayou.vscode-todo-highlight) 和 [todo-tree](https://marketplace.visualstudio.com/items?itemName=Gruntfuggly.todo-tree) 这三个插件。
 
-## Workspace Settings
+## Settings
 
-为了让 vscode 能正常跳转，不跳到 `$GOROOT`，请在 Workspace Settings 将 `go.goroot` 设置为本目录。
+### Workspace 
+
+为了让 vscode 能正常跳转，不跳到 `$GOROOT`，请在 Workspace Settings 将 `go.goroot` 设置为本目录（绝对路径）。
 
 注意：vscode 可能会提示需要升级 go tools，此时请忽略。
 
-## Extension Settings
+### Extension
 
 我的 `todo-highlight` 和 `todo-tree` 设置如下：
 
