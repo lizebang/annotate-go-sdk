@@ -3349,6 +3349,8 @@ const (
 
 	// NextProtoTLS is the NPN/ALPN protocol negotiated during
 	// HTTP/2's TLS setup.
+	//
+	// TS: NextProtoTLS 是在 HTTP/2' TLS 设置时的 NPN/ALPN 协商协议的名称。
 	http2NextProtoTLS = "h2"
 
 	// http://http2.github.io/http2-spec/#SettingValues
@@ -3865,6 +3867,8 @@ var (
 )
 
 // Server is an HTTP/2 server.
+//
+// TS: Server 是一个 HTTP/2 的服务器。
 type http2Server struct {
 	// MaxHandlers limits the number of http.Handler ServeHTTP goroutines
 	// which may run at a time over all connections.
@@ -3910,6 +3914,9 @@ type http2Server struct {
 
 	// NewWriteScheduler constructs a write scheduler for a connection.
 	// If nil, a default scheduler is chosen.
+	//
+	// NewWriteScheduler 为连接构造一个写调度器。
+	// 如果为空，将选择默认的调度器。
 	NewWriteScheduler func() http2WriteScheduler
 
 	// Internal state. This is a pointer (rather than embedded directly)
@@ -3985,6 +3992,12 @@ func (s *http2serverInternalState) startGracefulShutdown() {
 // The configuration conf may be nil.
 //
 // ConfigureServer must be called before s begins serving.
+//
+// TS: ConfigureServer 为 net/http Server 添加 HTTP/2 的支持。
+//
+// 配置 conf 可能为 nil。
+//
+// ConfigureServer 必须在 s 开始服务前被调用。
 func http2ConfigureServer(s *Server, conf *http2Server) error {
 	if s == nil {
 		panic("nil *http.Server")

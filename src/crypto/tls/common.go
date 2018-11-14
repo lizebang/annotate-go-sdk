@@ -341,6 +341,10 @@ const (
 // After one has been passed to a TLS function it must not be
 // modified. A Config may be reused; the tls package will also not
 // modify it.
+//
+// TS: Config 结构被用于配置 TLS 客户端或服务器。
+// IMP: 在被传给一个 TLS 函数后，它就不应该被修改。
+// Config 可以复用，tls 包也不会修改它。
 type Config struct {
 	// Rand provides the source of entropy for nonces and RSA blinding.
 	// If Rand is nil, TLS uses the cryptographic random reader in package
@@ -430,6 +434,8 @@ type Config struct {
 	RootCAs *x509.CertPool
 
 	// NextProtos is a list of supported, application level protocols.
+	//
+	// NextProtos 是支持的应用层协议列表。
 	NextProtos []string
 
 	// ServerName is used to verify the hostname on the returned

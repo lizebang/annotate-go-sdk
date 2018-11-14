@@ -2542,7 +2542,10 @@ type Server struct {
 	// If TLSNextProto is not nil, HTTP/2 support is not enabled
 	// automatically.
 	//
-	// TLSNextProto
+	// TLSNextProto 可选择指定一个函数在发生 NPN/ALPN 协议升级时接管所提供的 TLS 连接的所有权。
+	// map 的 key 是协商协议的名称。Handler 的参数必须备用开处理 HTTP 请求、初始化请求 TLS 以及
+	// 在 RemoteAddr 尚未设置时进行设置。当函数返回时连接被自动关闭。如果 TLSNextProto 不为空，
+	// HTTP/2 的支持不会自动开启。
 	TLSNextProto map[string]func(*Server, *tls.Conn, Handler)
 
 	// ConnState specifies an optional callback function that is
@@ -2824,6 +2827,9 @@ var testHookServerServe func(*Server, net.Listener) // used if non-nil
 
 // shouldDoServeHTTP2 reports whether Server.Serve should configure
 // automatic HTTP/2. (which sets up the srv.TLSNextProto map)
+//
+// shouldDoServeHTTP2 检查是否 Server.Serve 应该被自动配置 HTTP/2。
+//（即是否设置了 srv.TLSNextProto map）
 func (srv *Server) shouldConfigureHTTP2ForServe() bool {
 	if srv.TLSConfig == nil {
 		// Compatibility with Go 1.6:
@@ -2832,6 +2838,11 @@ func (srv *Server) shouldConfigureHTTP2ForServe() bool {
 		// tls.NewListener and passed that listener to Serve.
 		// So we should configure HTTP/2 (to set up srv.TLSNextProto)
 		// in case the listener returns an "h2" *tls.Conn.
+		//
+		// 兼容 Go 1.6：
+		// 如果没有 TLSConfig，可能用户仅仅没有将它设置到 http.Server 中，但将它传给了
+		// tls.NewListener 并将这个监听器传给 Serve。
+		// 所以我们应该在监听器返回 "h2" *tls.Conn 时配置 HTTP/2（去设置 srv.TLSNextProto）。
 		return true
 	}
 	// The user specified a TLSConfig on their http.Server.
@@ -2841,6 +2852,12 @@ func (srv *Server) shouldConfigureHTTP2ForServe() bool {
 	// passed this tls.Config to tls.NewListener. And if they did,
 	// it's too late anyway to fix it. It would only be potentially racy.
 	// See Issue 15908.
+	//
+	// 用户在 http.Server 中指明了 TLSConfig。
+	// 在这种情况下，如果 tls.Config 明确提到 "h2" 只配置 HTTP/2。
+	// 否则 http2.ConfigureServer 将修改 tls.Config 并添加它，但是它们可能已经将此
+	// tls.Config 传给 tls.NewListener。如果已经发生，更改已经太晚了。它将保持不变。
+	// 请查看 Issue 15908。
 	return strSliceContains(srv.TLSConfig.NextProtos, http2NextProtoTLS)
 }
 
@@ -3131,13 +3148,23 @@ func (srv *Server) setupHTTP2_ServeTLS() error {
 // TestConcurrentServerServe in server_test.go demonstrate some
 // of the supported use cases and motivations.
 //
-// TS: setupHTTP2_Serve
+// TS: setupHTTP2_Serve 由 (*Server).Serve 调用并且使用一种比 setupHTTP2_ServeTLS
+// 更加保守到策略在 srv 上配置 HTTP/2，因为 Serve 是在 tls.Listen 之后调用的，并且它们
+// 可能被同时调用。请查看 shouldConfigureHTTP2ForServe。
+//
+// transport_test.go 和 serve_test.go 中名为 TestTransportAutomaticHTTP2* 和
+// TestConcurrentServerServe 的测试表明了一些支持的用例和动机。
 func (srv *Server) setupHTTP2_Serve() error {
 	srv.nextProtoOnce.Do(srv.onceSetNextProtoDefaults_Serve)
 	return srv.nextProtoErr
 }
 
 func (srv *Server) onceSetNextProtoDefaults_Serve() {
+	// IMP: 返回 true 的情况
+	// 1. srv.TLSConfig == nil，因为用户可能将 tls.Config 传给 tls.NewListener
+	// 但没有设置到 http.Server。
+	// 2. srv.TLSConfig != nil，tls.Config 明确包含 "h2"，即 srv.TLSConfig.NextProtos
+	// 中包含 "h2"。
 	if srv.shouldConfigureHTTP2ForServe() {
 		srv.onceSetNextProtoDefaults()
 	}
@@ -3146,12 +3173,17 @@ func (srv *Server) onceSetNextProtoDefaults_Serve() {
 // onceSetNextProtoDefaults configures HTTP/2, if the user hasn't
 // configured otherwise. (by setting srv.TLSNextProto non-nil)
 // It must only be called via srv.nextProtoOnce (use srv.setupHTTP2_*).
+//
+// onceSetNextProtoDefaults 在用户尚未使用其他方式配置（通过设置 srv.TLSNextProto 非空），配置 HTTP/2。
+// 它只能通过 srv.nextProtoOnce 调用（使用 srv.setupHTTP2_*）。
 func (srv *Server) onceSetNextProtoDefaults() {
 	if strings.Contains(os.Getenv("GODEBUG"), "http2server=0") {
 		return
 	}
 	// Enable HTTP/2 by default if the user hasn't otherwise
 	// configured their TLSNextProto map.
+	//
+	// 如果用户尚未配置自己的 TLSNextProto map，将使用默认方式开启 HTTP/2。
 	if srv.TLSNextProto == nil {
 		conf := &http2Server{
 			NewWriteScheduler: func() http2WriteScheduler { return http2NewPriorityWriteScheduler(nil) },
