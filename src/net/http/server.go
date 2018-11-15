@@ -246,6 +246,10 @@ var (
 	// handlers with context.WithValue to access the server that
 	// started the handler. The associated value will be of
 	// type *Server.
+	// 它可以在具有context.WithValue的HTTP处理程序中使用，以访问启动处理程序的服务器。
+	// TS: ServerContextKey 是一个 context key。
+	// 它可以通过 context.WithValue 在 HTTP 处理函数中使用，以便在处理函数中访问 server。
+	// 它关联的值将是 *Server 类型。
 	ServerContextKey = &contextKey{"http-server"}
 
 	// LocalAddrContextKey is a context key. It can be used in
@@ -625,9 +629,13 @@ func (w *response) ReadFrom(src io.Reader) (n int64, err error) {
 
 // debugServerConnections controls whether all server connections are wrapped
 // with a verbose logging wrapper.
+//
+// TS: debugServerConnections 控制是否所有的服务器连接都记录详细的日志。
 const debugServerConnections = false
 
 // Create new connection from rwc.
+//
+// TS: 为 rwc 创建新的连接。
 func (srv *Server) newConn(rwc net.Conn) *conn {
 	c := &conn{
 		server: srv,
@@ -2575,8 +2583,8 @@ type Server struct {
 	nextProtoErr error // result of http2.ConfigureServer if used
 
 	mu         sync.Mutex
-	listeners  map[*net.Listener]struct{}
-	activeConn map[*conn]struct{}
+	listeners  map[*net.Listener]struct{} // 使用的监听器集合，使用 trackListener 添加或删除
+	activeConn map[*conn]struct{}         // 活跃连接的集合，使用 trackConn 添加或删除
 	doneChan   chan struct{}
 	onShutdown []func()
 }
@@ -2732,6 +2740,9 @@ func (s *Server) closeListenersLocked() error {
 
 // A ConnState represents the state of a client connection to a server.
 // It's used by the optional Server.ConnState hook.
+//
+// TS: ConnState 代表一个客户端连接到一台服务器的状态。
+// 它通过可选择的 Server.ConnState 钩子函数来被使用。
 type ConnState int
 
 const (
@@ -2739,6 +2750,9 @@ const (
 	// send a request immediately. Connections begin at this
 	// state and then transition to either StateActive or
 	// StateClosed.
+	//
+	// StateNew 表示一个新的连接预计立即发送请求。连接从此状态开始，然后转变成 StateActive
+	// 或 StateClosed。
 	StateNew ConnState = iota
 
 	// StateActive represents a connection that has read 1 or more
@@ -2752,21 +2766,36 @@ const (
 	// active requests are complete. That means that ConnState
 	// cannot be used to do per-request work; ConnState only notes
 	// the overall state of the connection.
+	//
+	// StateActive 代表一个连接读取了请求至少一个字节。在请求进入处理函数前 StateActive
+	// 的 Server.ConnState 钩子函数触发，并且直到请求被处理不会再次触发。在请求被处理后，状态转变
+	// 成 StateClosed、StateHijacked 或 StateIdle。对于 HTTP/2，StateActive 在从零个请
+	// 求转变成一个时触发，并且只有在所有活跃的请求完成后才会转换。IMP: 这意味着 ConnState 不
+	// 能用于每个请求，ConnState 只能注意到连接的整体状态。
 	StateActive
 
 	// StateIdle represents a connection that has finished
 	// handling a request and is in the keep-alive state, waiting
 	// for a new request. Connections transition from StateIdle
 	// to either StateActive or StateClosed.
+	//
+	// StateIdle 代表一个连接已经完成一个请求的处理，并且处于 keep-alive 状态等待一个新的请求。
+	// 连接从 StateIdle 转变成 StateActive 或 StateClosed。
 	StateIdle
 
 	// StateHijacked represents a hijacked connection.
 	// This is a terminal state. It does not transition to StateClosed.
+	//
+	// StateHijacked 代表一个劫持的连接。
+	// 这是一个最终的状态。它不会转变成 StateClosed。
 	StateHijacked
 
 	// StateClosed represents a closed connection.
 	// This is a terminal state. Hijacked connections do not
 	// transition to StateClosed.
+	//
+	// StateClosed 代表一个关闭的连接。
+	// 这是一个最终的状态。被劫持的连接不会转变成 StateClosed。
 	StateClosed
 )
 
@@ -2863,6 +2892,9 @@ func (srv *Server) shouldConfigureHTTP2ForServe() bool {
 
 // ErrServerClosed is returned by the Server's Serve, ServeTLS, ListenAndServe,
 // and ListenAndServeTLS methods after a call to Shutdown or Close.
+//
+// TS: ErrServerClosed 在 Server 的 Serve、ServeTLS、ListenAndServe 和 ListenAndServeTLS
+// 方法调用 Shutdown 或 Close 后返回。
 var ErrServerClosed = errors.New("http: Server closed")
 
 // Serve accepts incoming connections on the Listener l, creating a
@@ -2893,6 +2925,7 @@ func (srv *Server) Serve(l net.Listener) error {
 	l = &onceCloseListener{Listener: l}
 	defer l.Close()
 
+	// IMP: TODO: 之后再完成 HTTP/2 部分的阅读
 	if err := srv.setupHTTP2_Serve(); err != nil {
 		return err
 	}
@@ -2902,7 +2935,9 @@ func (srv *Server) Serve(l net.Listener) error {
 	}
 	defer srv.trackListener(&l, false)
 
-	var tempDelay time.Duration     // how long to sleep on accept failure
+	// 接受失败时的睡眠时间
+	var tempDelay time.Duration // how long to sleep on accept failure
+	// base 总是 background，根据 https://github.com/golang/go/issues/16220
 	baseCtx := context.Background() // base is always background, per Issue 16220
 	ctx := context.WithValue(baseCtx, ServerContextKey, srv)
 	for {
@@ -2930,6 +2965,7 @@ func (srv *Server) Serve(l net.Listener) error {
 		}
 		tempDelay = 0
 		c := srv.newConn(rw)
+		// 可以在 Serve 前返回
 		c.setState(c.rwc, StateNew) // before Serve can return
 		go c.serve(ctx)
 	}
@@ -2984,6 +3020,14 @@ func (srv *Server) ServeTLS(l net.Listener, certFile, keyFile string) error {
 // Listener from another caller.
 //
 // It reports whether the server is still up (not Shutdown or Closed).
+//
+// TS: trackListener 在使用的监听器集合中添加或删除一个 net.Listener。
+//
+// 我们在映射集中存储了一个 interface 的指针，以防 net.Listener 无法比较。这是安全的，
+// 因为我们只通过 Serve 调用 trackListener，并且可以使用 track+defer 取消追踪。
+// 我们永远不需要同另一个 caller 比较 Listener。
+//
+// 它检测服务器是否仍处于打开状态（不是 Shutdown 或 Closed）。
 func (s *Server) trackListener(ln *net.Listener, add bool) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -3001,6 +3045,7 @@ func (s *Server) trackListener(ln *net.Listener, add bool) bool {
 	return true
 }
 
+// trackConn 在活跃连接的集合中添加或删除一个 conn。
 func (s *Server) trackConn(c *conn, add bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -3035,6 +3080,8 @@ func (s *Server) doKeepAlives() bool {
 func (s *Server) shuttingDown() bool {
 	// TODO: replace inShutdown with the existing atomicBool type;
 	// see https://github.com/golang/go/issues/20239#issuecomment-381434582
+	// TS: 用已有的 atomicBool 替换 inShutdown
+	// 请查阅 https://github.com/golang/go/issues/20239#issuecomment-381434582
 	return atomic.LoadInt32(&s.inShutdown) != 0
 }
 
@@ -3394,6 +3441,8 @@ func (h initNPNRequest) ServeHTTP(rw ResponseWriter, req *Request) {
 }
 
 // loggingConn is used for debugging.
+//
+// TS: loggingConn 用于调试。
 type loggingConn struct {
 	name string
 	net.Conn

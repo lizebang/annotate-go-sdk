@@ -11,7 +11,7 @@
 //
 // TS: Package sync 提供了基础同步原语，如互斥锁。
 // 除了 Once 和 WaitGroup 类型，大多数类型都适用于低级库例程（go routines）。
-// 通过 channels 和 通信 可以更好地完成更高级别的同步。
+// 通过 channels 和 communication 可以更好地完成更高级别的同步。
 //
 // 定义在此包中的类型值不应该被复制。
 package sync

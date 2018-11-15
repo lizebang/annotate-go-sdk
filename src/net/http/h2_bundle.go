@@ -9743,9 +9743,16 @@ type http2PriorityWriteSchedulerConfig struct {
 // NewPriorityWriteScheduler constructs a WriteScheduler that schedules
 // frames by following HTTP/2 priorities as described in RFC 7540 Section 5.3.
 // If cfg is nil, default options are used.
+//
+// TS: NewPriorityWriteScheduler 构造一个 WriteScheduler，它遵循 RFC 7540 第 5.3 节所述的
+// 按照 HTTP/2 优先级安排帧。
+// 如果 cfg 为空，将使用默认选项。
 func http2NewPriorityWriteScheduler(cfg *http2PriorityWriteSchedulerConfig) http2WriteScheduler {
 	if cfg == nil {
 		// For justification of these defaults, see:
+		// https://docs.google.com/document/d/1oLhNg1skaWD4_DtaoCxdSRN5erEXrH-KnLrMwEpOtFY
+		//
+		// TS: 有关这些默认值的理由，请参阅：
 		// https://docs.google.com/document/d/1oLhNg1skaWD4_DtaoCxdSRN5erEXrH-KnLrMwEpOtFY
 		cfg = &http2PriorityWriteSchedulerConfig{
 			MaxClosedNodesInTree:     10,
