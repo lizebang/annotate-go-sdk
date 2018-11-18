@@ -698,16 +698,23 @@ type readResult struct {
 // read sizes) with support for selectively keeping an io.Reader.Read
 // call blocked in a background goroutine to wait for activity and
 // trigger a CloseNotifier channel.
+//
+// connReader 是 *conn 使用的 io.Reader 包装器。它结合了一个选择性激活的
+// io.LimitedReader（绑定请求头读取大小），支持选择地在后台 goroutine 中
+// 保持 io.Reader.Read 调用的阻塞以等待其激活并触发 CloseNotifier 通道。
 type connReader struct {
 	conn *conn
 
+	// 保护下述变量
 	mu      sync.Mutex // guards following
 	hasByte bool
 	byteBuf [1]byte
 	cond    *sync.Cond
 	inRead  bool
-	aborted bool  // set true before conn.rwc deadline is set to past
-	remain  int64 // bytes remaining
+	// 在 conn.rwc 的截止时间设置为过去之前设置为 true。
+	aborted bool // set true before conn.rwc deadline is set to past
+	// 剩余字节数
+	remain int64 // bytes remaining
 }
 
 func (cr *connReader) lock() {
@@ -889,6 +896,8 @@ func newBufioReader(r io.Reader) *bufio.Reader {
 	}
 	// Note: if this reader size is ever changed, update
 	// TestHandlerBodyClose's assumptions.
+	//
+	// 注意：如果 reader 大小总是变化，请更新 TestHandlerBodyClose 的假设。
 	return bufio.NewReader(r)
 }
 

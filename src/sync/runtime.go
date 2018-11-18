@@ -55,13 +55,13 @@ func init() {
 
 // Active spinning runtime support.
 // runtime_canSpin returns true is spinning makes sense at the moment.
-// TS: 主动自旋 运行时支持
+// TS: 主动自旋 运行时支持。
 // runtime_canSpin 返回 true 代表此时自旋是有意义的。
 func runtime_canSpin(i int) bool
 
 // runtime_doSpin does active spinning.
 //
-// runtime_doSpin 做主动自旋
+// runtime_doSpin 进行主动自旋。
 func runtime_doSpin()
 
 func runtime_nanotime() int64

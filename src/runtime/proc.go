@@ -5062,11 +5062,16 @@ func sync_runtime_canSpin(i int) bool {
 	// because there can be work on global runq or on other Ps.
 	//
 	// sync.Mutex 是用来协作的，所以我们保持自旋。
-	// 只自旋几次，且只有当运行在多核机器、GOMAXPROCS>1、存在至少一个其他正在运行的 P、本地 runq 是空的时自旋。
-	// 与运行时互斥（runtime mutex）不同，我们不会在这里做被动自旋，因为可以在全局 runq 或其他的 P 上运行。
+	// 只自旋几次，并且只在多核机器上运行，并且要求 GOMAXPROCS>1，并且至少还有一个其他正在运行的 P，并且本地 runq 是空的。
+	// 与运行时互斥锁（runtime mutex）不同，我们不会在这里进行被动自旋，因为可以在全局 runq 或其他的 P 上运行。
+	//
+	// i >= active_spin i 是自旋次数，自旋超过 4 次时，将不再自旋。
+	// ncpu <= 1 不是多核机器时，不进行自旋。
+	// TSK: gomaxprocs <= int32(sched.npidle+sched.nmspinning)+1
 	if i >= active_spin || ncpu <= 1 || gomaxprocs <= int32(sched.npidle+sched.nmspinning)+1 {
 		return false
 	}
+	// TSK: 本地 runq 不为是空时，不进行自旋。
 	if p := getg().m.p.ptr(); !runqempty(p) {
 		return false
 	}

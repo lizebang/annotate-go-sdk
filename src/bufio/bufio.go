@@ -43,8 +43,13 @@ const maxConsecutiveEmptyReads = 100
 // NewReaderSize returns a new Reader whose buffer has at least the specified
 // size. If the argument io.Reader is already a Reader with large enough
 // size, it returns the underlying Reader.
+//
+// NewReaderSize 返回一个新的 Reader，其缓冲区至少具有指定的大小。如果参数 io.Reader 已经
+// 是一个 Reader 且缓冲区大小足够，将直接返回底层 Reader。
 func NewReaderSize(rd io.Reader, size int) *Reader {
 	// Is it already a Reader?
+	//
+	// 是否已经是 Reader？
 	b, ok := rd.(*Reader)
 	if ok && len(b.buf) >= size {
 		return b
@@ -58,6 +63,8 @@ func NewReaderSize(rd io.Reader, size int) *Reader {
 }
 
 // NewReader returns a new Reader whose buffer has the default size.
+//
+// NewReader 返回一个新的 Reader，其缓冲区为默认大小（4K）。
 func NewReader(rd io.Reader) *Reader {
 	return NewReaderSize(rd, defaultBufSize)
 }
@@ -67,6 +74,8 @@ func (r *Reader) Size() int { return len(r.buf) }
 
 // Reset discards any buffered data, resets all state, and switches
 // the buffered reader to read from r.
+//
+// Reset 丢弃所有缓冲的数据，重置所有状态并切换成从 r 读取数据到缓冲的 reader。
 func (b *Reader) Reset(r io.Reader) {
 	b.reset(b.buf, r)
 }

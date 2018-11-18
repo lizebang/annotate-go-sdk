@@ -41,6 +41,10 @@ import (
 // free list.
 //
 // A Pool must not be copied after first use.
+//
+// Pool 是一组可以单独保存和取出的临时变量。
+//
+// 储存在 Pool 中的任何
 type Pool struct {
 	noCopy noCopy
 
@@ -121,6 +125,8 @@ func (p *Pool) Put(x interface{}) {
 //
 // If Get would otherwise return nil and p.New is non-nil, Get returns
 // the result of calling p.New.
+//
+// Get
 func (p *Pool) Get() interface{} {
 	if race.Enabled {
 		race.Disable()
