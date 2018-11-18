@@ -246,9 +246,9 @@ var (
 	// handlers with context.WithValue to access the server that
 	// started the handler. The associated value will be of
 	// type *Server.
-	// 它可以在具有context.WithValue的HTTP处理程序中使用，以访问启动处理程序的服务器。
+	//
 	// TS: ServerContextKey 是一个 context key。
-	// 它可以通过 context.WithValue 在 HTTP 处理函数中使用，以便在处理函数中访问 server。
+	// 它在 HTTP 处理函数中被 context.WithValue 使用，以便在处理函数中访问 server。
 	// 它关联的值将是 *Server 类型。
 	ServerContextKey = &contextKey{"http-server"}
 
@@ -256,63 +256,103 @@ var (
 	// HTTP handlers with context.WithValue to access the local
 	// address the connection arrived on.
 	// The associated value will be of type net.Addr.
+	//
+	// LocalAddrContextKey 是一个 context key。
+	// 它在 HTTP 处理函数中被 context.WithValue 使用，以便在连接完成后得到本地地址。
 	LocalAddrContextKey = &contextKey{"local-addr"}
 )
 
 // A conn represents the server side of an HTTP connection.
+//
+// TS: conn 代表 HTTP 连接的服务端。
 type conn struct {
 	// server is the server on which the connection arrived.
 	// Immutable; never nil.
+	//
+	// server 是连接到的服务器。
+	// 不可改变，永不为空。
 	server *Server
 
 	// cancelCtx cancels the connection-level context.
+	//
+	// cancelCtx 取消连接级的 context。
 	cancelCtx context.CancelFunc
 
 	// rwc is the underlying network connection.
 	// This is never wrapped by other types and is the value given out
 	// to CloseNotifier callers. It is usually of type *net.TCPConn or
 	// *tls.Conn.
+	//
+	// rwc 是底层网络连接。
+	// 它永远不会被其他类型包装，并且它的值被传给 CloseNotifier 的调用者。
+	// 它通常是 *net.TCPConn 类型或 *tls.Conn 类型。
 	rwc net.Conn
 
 	// remoteAddr is rwc.RemoteAddr().String(). It is not populated synchronously
 	// inside the Listener's Accept goroutine, as some implementations block.
 	// It is populated immediately inside the (*conn).serve goroutine.
 	// This is the value of a Handler's (*Request).RemoteAddr.
+	//
+	// remoteAddr 是 rwc.RemoteAddr().String() 的返回值。
+	// 在 Listener's Accept goroutine 中，它没有被同步赋值，因为一些实现的限制。
+	// 在 (*conn).serve goroutine 中，它被立即赋值。
+	// 它是 Handler's (*Request).RemoteAddr 的值。
 	remoteAddr string
 
 	// tlsState is the TLS connection state when using TLS.
 	// nil means not TLS.
+	//
+	// tlsState 是在使用 TLS 时 TLS 连接的状态。
+	// nil 代表没有使用 TLS。
 	tlsState *tls.ConnectionState
 
 	// werr is set to the first write error to rwc.
 	// It is set via checkConnErrorWriter{w}, where bufw writes.
+	//
+	// werr 被设置为第一个写入 rwc 的错误。
 	werr error
 
 	// r is bufr's read source. It's a wrapper around rwc that provides
 	// io.LimitedReader-style limiting (while reading request headers)
 	// and functionality to support CloseNotifier. See *connReader docs.
+	//
+	// r 是 bufr 的读取源。它将 rwc 包装成 io.Reader，它提供了 io.LimitedReader 的
+	// 限制（在读取请求头的时候）并且支持 CloseNotifier 功能。请查看 *connReader 文档。
 	r *connReader
 
 	// bufr reads from r.
+	//
+	// bufr 从 r 读取。
 	bufr *bufio.Reader
 
 	// bufw writes to checkConnErrorWriter{c}, which populates werr on error.
+	//
+	// bufw 写入到 checkConnErrorWriter{c}，在出错时会给 werr 赋值。
 	bufw *bufio.Writer
 
 	// lastMethod is the method of the most recent request
 	// on this connection, if any.
+	//
+	// lastMethod 是此连接上最近请求到方法。
 	lastMethod string
 
+	// TSK:
 	curReq atomic.Value // of *response (which has a Request in it)
 
+	// TSK:
 	curState struct{ atomic uint64 } // packed (unixtime<<8|uint8(ConnState))
 
 	// mu guards hijackedv
+	//
+	// mu 用于保护 hijackedv
 	mu sync.Mutex
 
 	// hijackedv is whether this connection has been hijacked
 	// by a Handler with the Hijacker interface.
 	// It is guarded by mu.
+	//
+	// hijackedv 表明一个连接是否被一个 Handler 通过 Hijacker 接口劫持。
+	// 它通过 mu 被保护。
 	hijackedv bool
 }
 
@@ -635,7 +675,7 @@ const debugServerConnections = false
 
 // Create new connection from rwc.
 //
-// TS: 为 rwc 创建新的连接。
+// Create 通过 rwc 创建新的连接。
 func (srv *Server) newConn(rwc net.Conn) *conn {
 	c := &conn{
 		server: srv,
@@ -1743,6 +1783,9 @@ var ErrAbortHandler = errors.New("net/http: abort Handler")
 // encountered during reading a request off the network when the
 // client has gone away or had its read fail somehow. This is used to
 // determine which logs are interesting enough to log about.
+//
+// isCommonNetReadError 检测错误是否
+//isCommonNetReadError报告当客户端离开或以某种方式读取失败时，错误是否是在从网络读取请求期间遇到的常见错误。
 func isCommonNetReadError(err error) bool {
 	if err == io.EOF {
 		return true
@@ -1757,6 +1800,8 @@ func isCommonNetReadError(err error) bool {
 }
 
 // Serve a new connection.
+//
+// 为一个新的连接提供服务。
 func (c *conn) serve(ctx context.Context) {
 	c.remoteAddr = c.rwc.RemoteAddr().String()
 	ctx = context.WithValue(ctx, LocalAddrContextKey, c.rwc.LocalAddr())
@@ -1773,6 +1818,7 @@ func (c *conn) serve(ctx context.Context) {
 		}
 	}()
 
+	// TSK: 在阅读 ServeTLS 时再看
 	if tlsConn, ok := c.rwc.(*tls.Conn); ok {
 		if d := c.server.ReadTimeout; d != 0 {
 			c.rwc.SetReadDeadline(time.Now().Add(d))
@@ -1796,6 +1842,8 @@ func (c *conn) serve(ctx context.Context) {
 	}
 
 	// HTTP/1.x from here on.
+	//
+	// HTTP/1.x 从这里开始。
 
 	ctx, cancelCtx := context.WithCancel(ctx)
 	c.cancelCtx = cancelCtx
@@ -1820,12 +1868,15 @@ func (c *conn) serve(ctx context.Context) {
 				// responding to them and hanging up
 				// while they're still writing their
 				// request. Undefined behavior.
+				//
+				// 未定义的行为。
 				const publicErr = "431 Request Header Fields Too Large"
 				fmt.Fprintf(c.rwc, "HTTP/1.1 "+publicErr+errorHeaders+publicErr)
 				c.closeWriteAndWait()
 				return
 			}
 			if isCommonNetReadError(err) {
+				//
 				return // don't reply
 			}
 
@@ -2857,7 +2908,7 @@ var testHookServerServe func(*Server, net.Listener) // used if non-nil
 // shouldDoServeHTTP2 reports whether Server.Serve should configure
 // automatic HTTP/2. (which sets up the srv.TLSNextProto map)
 //
-// shouldDoServeHTTP2 检查是否 Server.Serve 应该被自动配置 HTTP/2。
+// shouldDoServeHTTP2 检测是否 Server.Serve 应该被自动配置 HTTP/2。
 //（即是否设置了 srv.TLSNextProto map）
 func (srv *Server) shouldConfigureHTTP2ForServe() bool {
 	if srv.TLSConfig == nil {
@@ -2925,7 +2976,7 @@ func (srv *Server) Serve(l net.Listener) error {
 	l = &onceCloseListener{Listener: l}
 	defer l.Close()
 
-	// IMP: TODO: 之后再完成 HTTP/2 部分的阅读
+	// TSK: 之后再完成 HTTP/2 部分的阅读
 	if err := srv.setupHTTP2_Serve(); err != nil {
 		return err
 	}
@@ -2967,6 +3018,7 @@ func (srv *Server) Serve(l net.Listener) error {
 		c := srv.newConn(rw)
 		// 可以在 Serve 前返回
 		c.setState(c.rwc, StateNew) // before Serve can return
+		// IMP: serve 的参数 ctx 发生复制
 		go c.serve(ctx)
 	}
 }

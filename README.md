@@ -12,7 +12,7 @@
 
 ## Settings
 
-### Workspace 
+### Workspace
 
 为了让 vscode 能正常跳转，不跳到 `$GOROOT`，请在 Workspace Settings 将 `go.goroot` 设置为本目录（绝对路径）。
 
@@ -54,6 +54,12 @@
 			"color": "#000",
 			"backgroundColor": "#a287f4",
 			"overviewRulerColor": "rgba(240,98,146,0.8)"
+		},
+		{
+			"text": "TSK:",
+			"color": "#000",
+			"backgroundColor": "#00aaFF",
+			"overviewRulerColor": "rgba(240,98,146,0.8)"
 		}
 	],
 
@@ -63,17 +69,19 @@
 		"background": "white",
 		"type": "none"
 	},
-	"todo-tree.tags": ["TODO:", "FIXME:", "NOTE:", "TS:", "IMP:"],
+	"todo-tree.tags": ["TODO:", "FIXME:", "NOTE:", "TS:", "IMP:", "TSK:"],
 	"todo-tree.customHighlight": {
 		"TODO:": {},
 		"FIXME:": {},
 		"NOTE:": {},
 		"TS:": {},
-		"IMP:": {}
+		"IMP:": {},
+		"TSK:": {}
 	},
 ```
 
-`TS` 和 `IMP` 是我自己定义的，它们的含义是：
+`TS:`、`IMP:`、`TSK:` 是我自己定义的，它们的含义是：
 
 - `TS:` translate 翻译
 - `IMP:` important 重要
+- `TSK:` task 任务

@@ -102,9 +102,15 @@ var (
 // The two methods Network and String conventionally return strings
 // that can be passed as the arguments to Dial, but the exact form
 // and meaning of the strings is up to the implementation.
+//
+// Addr 代表网络端点地址。
+// Network 和 String 这两个方法按照约定返回可以作为参数传给 Dial 函数的字符串。
+// 但是确切的形式和字符串的含义取决于实现。
 type Addr interface {
+	// 网络名称（例如，"tcp", "udp"）
 	Network() string // name of the network (for example, "tcp", "udp")
-	String() string  // string form of address (for example, "192.0.2.1:25", "[2001:db8::1]:80")
+	// 地址的字符串形式（例如，"192.0.2.1:25", "[2001:db8::1]:80"）
+	String() string // string form of address (for example, "192.0.2.1:25", "[2001:db8::1]:80")
 }
 
 // Conn is a generic stream-oriented network connection.
@@ -126,9 +132,13 @@ type Conn interface {
 	Close() error
 
 	// LocalAddr returns the local network address.
+	//
+	// LocalAddr 返回本地网络地址。
 	LocalAddr() Addr
 
 	// RemoteAddr returns the remote network address.
+	//
+	// RemoteAddr 返回远端网络地址。
 	RemoteAddr() Addr
 
 	// SetDeadline sets the read and write deadlines associated
