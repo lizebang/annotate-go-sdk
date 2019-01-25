@@ -135,7 +135,7 @@ import (
 // ErrHelp is the error returned if the -help or -h flag is invoked
 // but no such flag is defined.
 //
-// ErrHelp 在标志 -help 或 -h 被调用但没有定义这样的标志时返回次错误。
+// ErrHelp 在标志 -help 或 -h 被调用，或者使用了没有定义的标志时返回此错误。
 var ErrHelp = errors.New("flag: help requested")
 
 // -- bool Value
@@ -524,7 +524,7 @@ func isZeroValue(flag *Flag, value string) bool {
 	//
 	// 构造一个标志 Value 类型的零值，并检验用其 String 方法得到的结果和传入的 value 是否相等。
 	// 除非 Value 类型本身是一个接口类型，否则此方法有效。
-	// TSK: IMP:
+	// TSK:// IMP:
 	typ := reflect.TypeOf(flag.Value)
 	var z reflect.Value
 	if typ.Kind() == reflect.Ptr {
@@ -540,8 +540,15 @@ func isZeroValue(flag *Flag, value string) bool {
 // Given "a `name` to show" it returns ("name", "a name to show").
 // If there are no back quotes, the name is an educated guess of the
 // type of the flag's value, or the empty string if the flag is boolean.
+//
+// UnquoteUsage 从用法信息中提取引号中的 name，并将它和去除引号的用法信息返回。
+// 给出 "a `name` to show"，将返回 "name" 和 "a name to show"。
+// 如果没有引号，则该名称是对标志值类型有依据的猜测。
+// 如果该标志是布尔值，则为空字符串。
 func UnquoteUsage(flag *Flag) (name string, usage string) {
 	// Look for a back-quoted name, but avoid the strings package.
+	//
+	// 查找引号中的 name，但要避免使用 strings 包。
 	usage = flag.Usage
 	for i := 0; i < len(usage); i++ {
 		if usage[i] == '`' {
@@ -552,10 +559,13 @@ func UnquoteUsage(flag *Flag) (name string, usage string) {
 					return name, usage
 				}
 			}
+			// 只有一个引号，进入类型 name 的情况。
 			break // Only one back quote; use type name.
 		}
 	}
 	// No explicit name, so use type if we can find one.
+	//
+	// 没有明确的 name，所以使用我们可以找到的类型。
 	name = "value"
 	switch flag.Value.(type) {
 	case boolFlag:
@@ -577,8 +587,12 @@ func UnquoteUsage(flag *Flag) (name string, usage string) {
 // PrintDefaults prints, to standard error unless configured otherwise, the
 // default values of all defined command-line flags in the set. See the
 // documentation for the global function PrintDefaults for more information.
+//
+// PrintDefaults 打印集合中所有已定义的命令行标志的默认值到标志错误输出，除非另有配置。
+// 更多信息请查看全局函数 PrintDefaults 的文档。
 func (f *FlagSet) PrintDefaults() {
 	f.VisitAll(func(flag *Flag) {
+		// 前面有两个空格，看下面两条注释
 		s := fmt.Sprintf("  -%s", flag.Name) // Two spaces before -; see next two comments.
 		name, usage := UnquoteUsage(flag)
 		if len(name) > 0 {
@@ -586,11 +600,17 @@ func (f *FlagSet) PrintDefaults() {
 		}
 		// Boolean flags of one ASCII letter are so common we
 		// treat them specially, putting their usage on the same line.
+		//
+		// 单个 ASCII 码字母的 bool 型标志是如此常见。我们特殊对待此类标志，将它们的
+		// 用法信息在同一行输出。
+		// 看上一条注释可以知道格式为，空格，空格，-，字母。
 		if len(s) <= 4 { // space, space, '-', 'x'.
 			s += "\t"
 		} else {
 			// Four spaces before the tab triggers good alignment
 			// for both 4- and 8-space tab stops.
+			//
+			// 前有四个空格对于 4 个或 8 个空格的 tab 符都能有更好的对齐效果。
 			s += "\n    \t"
 		}
 		s += strings.Replace(usage, "\n", "\n    \t", -1)
@@ -598,6 +618,8 @@ func (f *FlagSet) PrintDefaults() {
 		if !isZeroValue(flag, flag.DefValue) {
 			if _, ok := flag.Value.(*stringValue); ok {
 				// put quotes on the value
+				//
+				// 值中存在引号
 				s += fmt.Sprintf(" (default %q)", flag.DefValue)
 			} else {
 				s += fmt.Sprintf(" (default %v)", flag.DefValue)
@@ -626,11 +648,27 @@ func (f *FlagSet) PrintDefaults() {
 // the output will be
 //	-I directory
 //		search directory for include files.
+//
+// PrintDefaults 打印集合中所有已定义的命令行标志的默认值到标志错误输出，除非另有配置。
+// 对于 int 型值的标志 x，默认输出的格式为
+//	-x int
+//		usage-message-for-x (default 7)
+// 除了单字节名称的 bool 型标志外，所有标志的用法信息将以单独的行显示。对于 bool 型标志，
+// 类型会被省略。并且，如果标志名是一个字节的，则所有信息出现在同一行。如果默认值是类型的零
+// 值，则括号中的默认值会被省略。列出的类型（这里是 int）可以通过在标志用法的字符串中放置
+// 一个带有引号的名称来代替。信息中的第一个匹配项将被当作参数名显示在消息中，并且显示时将去
+// 除消息中的引号。例如，给定
+//	flag.String("I", "", "search `directory` for include files")
+// 输出结果为
+//	-I directory
+//		search directory for include files.
 func PrintDefaults() {
 	CommandLine.PrintDefaults()
 }
 
 // defaultUsage is the default function to print a usage message.
+//
+// defaultUsage 是打印用法信息的默认方法。
 func (f *FlagSet) defaultUsage() {
 	if f.name == "" {
 		fmt.Fprintf(f.Output(), "Usage:\n")
@@ -653,6 +691,14 @@ func (f *FlagSet) defaultUsage() {
 // Custom usage functions may choose to exit the program; by default exiting
 // happens anyway as the command line's error handling strategy is set to
 // ExitOnError.
+//
+// NOTE: Usage 不仅仅是默认用法（CommandLine），因为它（通过 godoc flag Usage）还可以做为如何编写自
+// 己的 usage 函数的示例。
+
+// Usage 打印用法信息到 CommandLine.output（默认为 os.Stderr），它包含了所有命令行定义的标志。当解析
+// 标志出现错误时会调用此函数。此函数是一个变量，由此它可以被改变指向一个自定义的函数。默认情况下，它会打印
+// 一个简单的标题并调用 PrintDefaults。有关输出格式及其控制方法的详细信息，请看 PrintDefaults 的文档。
+// 自定义的 usage 函数可以选择退出程序。默认情况下会退出程序，因为命令行的错误处理策略为 ExitOnError。
 var Usage = func() {
 	fmt.Fprintf(CommandLine.Output(), "Usage of %s:\n", os.Args[0])
 	PrintDefaults()
@@ -944,12 +990,18 @@ func (f *FlagSet) Var(value Value, name string, usage string) {
 // caller could create a flag that turns a comma-separated string into a slice
 // of strings by giving the slice the methods of Value; in particular, Set would
 // decompose the comma-separated string into the slice.
+//
+// Var 使用指定的 name 和 usage 字符串定义一个标志。标志的类型和值由第一个参数表示，它通常包括用户
+// 自定义的 Value 实现，类型为 Value。例如，调用者可以创建一个标志，通过给切片提供 Value 的方法，
+// 将逗号分隔的字符串转化成字符串切片。尤其是 Set 能将逗号分隔的字符串分解成切片。
 func Var(value Value, name string, usage string) {
 	CommandLine.Var(value, name, usage)
 }
 
 // failf prints to standard error a formatted error and usage message and
 // returns the error.
+//
+// failf 打印格式化的错误和用法信息到输出，并返回错误。
 func (f *FlagSet) failf(format string, a ...interface{}) error {
 	err := fmt.Errorf(format, a...)
 	fmt.Fprintln(f.Output(), err)
@@ -959,6 +1011,9 @@ func (f *FlagSet) failf(format string, a ...interface{}) error {
 
 // usage calls the Usage method for the flag set if one is specified,
 // or the appropriate default usage function otherwise.
+//
+// usage 如果指定了 Usage 方法，则使用调用标记集的 Usage 方法，否则调用相应的默认
+// usage 函数。
 func (f *FlagSet) usage() {
 	if f.Usage == nil {
 		f.defaultUsage()
@@ -968,6 +1023,8 @@ func (f *FlagSet) usage() {
 }
 
 // parseOne parses one flag. It reports whether a flag was seen.
+//
+// parseOne 解析一个标志。它还返回是否
 func (f *FlagSet) parseOne() (bool, error) {
 	if len(f.args) == 0 {
 		return false, nil
@@ -979,6 +1036,7 @@ func (f *FlagSet) parseOne() (bool, error) {
 	numMinuses := 1
 	if s[1] == '-' {
 		numMinuses++
+		// "--" 终止标志
 		if len(s) == 2 { // "--" terminates the flags
 			f.args = f.args[1:]
 			return false, nil
@@ -990,9 +1048,12 @@ func (f *FlagSet) parseOne() (bool, error) {
 	}
 
 	// it's a flag. does it have an argument?
+	//
+	// 它是一个标志。这还存在争议吗？没有！
 	f.args = f.args[1:]
 	hasValue := false
 	value := ""
+	// '=' 不会是第一个，即标志不会为 "-=xx"，上面已做过判断
 	for i := 1; i < len(name); i++ { // equals cannot be first
 		if name[i] == '=' {
 			value = name[i+1:]
@@ -1004,6 +1065,7 @@ func (f *FlagSet) parseOne() (bool, error) {
 	m := f.formal
 	flag, alreadythere := m[name] // BUG
 	if !alreadythere {
+		// 特殊情况：打印帮助信息
 		if name == "help" || name == "h" { // special case for nice help message.
 			f.usage()
 			return false, ErrHelp
@@ -1011,6 +1073,7 @@ func (f *FlagSet) parseOne() (bool, error) {
 		return false, f.failf("flag provided but not defined: -%s", name)
 	}
 
+	// 特殊情况：不需要参数
 	if fv, ok := flag.Value.(boolFlag); ok && fv.IsBoolFlag() { // special case: doesn't need an arg
 		if hasValue {
 			if err := fv.Set(value); err != nil {
@@ -1023,8 +1086,12 @@ func (f *FlagSet) parseOne() (bool, error) {
 		}
 	} else {
 		// It must have a value, which might be the next argument.
+		//
+		// 它必须有一个值，值可能是下一个参数。
 		if !hasValue && len(f.args) > 0 {
 			// value is the next arg
+			//
+			// 值是下一个参数
 			hasValue = true
 			value, f.args = f.args[0], f.args[1:]
 		}
@@ -1046,6 +1113,10 @@ func (f *FlagSet) parseOne() (bool, error) {
 // include the command name. Must be called after all flags in the FlagSet
 // are defined and before flags are accessed by the program.
 // The return value will be ErrHelp if -help or -h were set but not defined.
+//
+// Parse 从参数列表中解析标志定义，参数列表中不应该包含命令名称。必须在所有标志被定义后，
+// 以及标志被程序访问前被调用。如果设置了 -help 或 -h 或者使用了未定义的标志，则返回值将
+// 为 ErrHelp。
 func (f *FlagSet) Parse(arguments []string) error {
 	f.parsed = true
 	f.args = arguments
@@ -1076,8 +1147,13 @@ func (f *FlagSet) Parsed() bool {
 
 // Parse parses the command-line flags from os.Args[1:]. Must be called
 // after all flags are defined and before flags are accessed by the program.
+//
+// Parse 从 os.Args[1:] 解析命令行标志。必须在所有标志被定义后，以及标志被程序访问前被
+// 调用。
 func Parse() {
 	// Ignore errors; CommandLine is set for ExitOnError.
+	//
+	// 忽略错误；CommandLine 被是在为 ExitOnError。
 	CommandLine.Parse(os.Args[1:])
 }
 
@@ -1099,6 +1175,11 @@ func init() {
 	// Note: This is not CommandLine.Usage = Usage,
 	// because we want any eventual call to use any updated value of Usage,
 	// not the value it has when this line is run.
+	//
+	// 覆盖通用 FlagSet 默认 Usage 函数，调用全局 Usage 函数。
+	// IMP: 此处是很高级的用法
+	// Note: 不使用 CommandLine.Usage = Usage 是因为我们希望所有调用最终使用的都是
+	// Usage 的更新值，而不是运行此行时的值。
 	CommandLine.Usage = commandLineUsage
 }
 
@@ -1109,6 +1190,9 @@ func commandLineUsage() {
 // NewFlagSet returns a new, empty flag set with the specified name and
 // error handling property. If the name is not empty, it will be printed
 // in the default usage message and in error messages.
+//
+// NewFlagSet 返回一个新的、空的、带有指定名称和错误处理级的标志集。如果名称不为空，
+// 它将在默认的用法信息和错误信息中被输出出来。
 func NewFlagSet(name string, errorHandling ErrorHandling) *FlagSet {
 	f := &FlagSet{
 		name:          name,
@@ -1121,6 +1205,9 @@ func NewFlagSet(name string, errorHandling ErrorHandling) *FlagSet {
 // Init sets the name and error handling property for a flag set.
 // By default, the zero FlagSet uses an empty name and the
 // ContinueOnError error handling policy.
+//
+// Init 给一个标志集设置名称和错误处理级。默认情况下，FlagSet 的零值使用一个空的名称和
+// ContinueOnError 错误处理级。
 func (f *FlagSet) Init(name string, errorHandling ErrorHandling) {
 	f.name = name
 	f.errorHandling = errorHandling
