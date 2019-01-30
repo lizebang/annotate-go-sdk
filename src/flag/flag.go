@@ -92,7 +92,7 @@
 		fmt.Println("ip has value ", *ip)
 		fmt.Println("flagvar has value ", flagvar)
 
-	解析后，通过 flag.Args() 获取非标志参数切片或者通过 flag.Arg(i) 获取指定非标志参数。
+	解析后，通过 flag.Args() 可以获取标志后的参数切片或者通过 flag.Arg(i) 获取指定的参数。
 	参数索引为 0 到 flag.NArg()-1。
 
 	命令行标志语法
