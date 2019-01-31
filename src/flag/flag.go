@@ -70,7 +70,7 @@
 
 	用法
 
-	使用 flags using flag.String(), Bool(), Int() 等定义标志。
+	使用 flag.String()、Bool()、Int() 等函数定义标志。
 
 	这声明了一个 int 型标志，-flagname，储存在指针 ip 中，类型为 *int。
 		import "flag"
@@ -102,18 +102,18 @@
 		-flag
 		-flag=x
 		-flag x  //  仅限非布尔标志
-	可以使用一个或两个减号，它们是等价的。
+	可以使用一个或两个破折号，它们是等价的。
 	最后一种的格式不允许使用布尔标志，因为命令的含义
 		cmd -x *
-	其中 * 是 Unix shell 通配符，如果存在文件叫 0, false 等，它将会发生更改。你必须使用
+	其中 * 是 Unix shell 通配符，如果存在文件叫 0、false 等，它将会发生更改。你必须使用
 	-flag=false 的格式来关闭布尔标志。
 
 	标志在第一个非标志参数（"-" 是一个非标志参数）之前或终结符 "--" 之后停止解析。
 
-	int 型标志可以接受 1234, 0664, 0x1234 以及负数。
+	int 型标志可以接受 1234、0664、0x1234 以及负数。
 	bool 型标志可以接受：
-		1, 0, t, f, T, F, true, false, TRUE, FALSE, True, False
-	Duration 型标志可以接受对 time.ParseDuration 有效对任何输入。
+		1、0、t、f、T、F、true、false、TRUE、FALSE、True、False
+	duration 型标志可以接受对 time.ParseDuration 有效对任何输入。
 
 	默认的命令行标志集由顶层函数控制。FlagSet 类型允许定义独立对标志集，例如在命令行接口中
 	实现子命令。FlagSet 的方法类似于命令行标志集的顶层函数。
@@ -603,7 +603,7 @@ func (f *FlagSet) PrintDefaults() {
 		//
 		// 单个 ASCII 码字母的 bool 型标志是如此常见。我们特殊对待此类标志，将它们的
 		// 用法信息在同一行输出。
-		// 看上一条注释可以知道格式为，空格，空格，-，字母。
+		// 看上一条注释可以知道格式为，空格、空格、'-'、字母。
 		if len(s) <= 4 { // space, space, '-', 'x'.
 			s += "\t"
 		} else {
@@ -1024,7 +1024,7 @@ func (f *FlagSet) usage() {
 
 // parseOne parses one flag. It reports whether a flag was seen.
 //
-// parseOne 解析一个标志。它还返回是否
+// parseOne 解析一个标志。它还返回是否找到标志。
 func (f *FlagSet) parseOne() (bool, error) {
 	if len(f.args) == 0 {
 		return false, nil
@@ -1049,7 +1049,7 @@ func (f *FlagSet) parseOne() (bool, error) {
 
 	// it's a flag. does it have an argument?
 	//
-	// 它是一个标志。这还存在争议吗？没有！
+	// 它是一个标志。它是否有参数？
 	f.args = f.args[1:]
 	hasValue := false
 	value := ""
@@ -1167,7 +1167,7 @@ func Parsed() bool {
 // methods of CommandLine.
 //
 // CommandLine 是默认的命令行标志集，从 os.Args 解析。
-// 顶层方法，如 BoolVar, Arg 等，是 CommandLine 方法的包装器。
+// 顶层方法，如 BoolVar、Arg 等，是 CommandLine 方法的包装器。
 var CommandLine = NewFlagSet(os.Args[0], ExitOnError)
 
 func init() {
