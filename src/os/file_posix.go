@@ -121,6 +121,9 @@ func (f *File) Truncate(size int64) error {
 // Sync commits the current contents of the file to stable storage.
 // Typically, this means flushing the file system's in-memory copy
 // of recently written data to disk.
+//
+// Sync 将文件的当前内容提交到稳定的存储中。通常，这意味着刷新文件系统中最近写入
+// 磁盘数据的内存副本。
 func (f *File) Sync() error {
 	if err := f.checkValid("sync"); err != nil {
 		return err

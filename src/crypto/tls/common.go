@@ -342,7 +342,7 @@ const (
 // modified. A Config may be reused; the tls package will also not
 // modify it.
 //
-// TS: Config 结构被用于配置 TLS 客户端或服务器。
+// Config 结构被用于配置 TLS 客户端或服务器。
 // IMP: 在被传给一个 TLS 函数后，它就不应该被修改。
 // Config 可以复用，tls 包也不会修改它。
 type Config struct {

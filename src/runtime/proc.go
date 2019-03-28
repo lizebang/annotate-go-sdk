@@ -75,6 +75,11 @@ var buildVersion = sys.TheVersion
 // Note that all this complexity does not apply to global run queue as we are not
 // sloppy about thread unparking when submitting to global queue. Also see comments
 // for nmspinning manipulation.
+//
+// Goroutine scheduler
+// 调度程序的工作是在工作线程上分发可立即运行的 goroutines。
+//
+// 主要的概念有：
 
 var (
 	m0           m
@@ -5051,7 +5056,7 @@ func sync_atomic_runtime_procUnpin() {
 }
 
 // Active spinning for sync.Mutex.
-// TS: 主动自旋 sync.Mutex
+// 主动自旋 sync.Mutex
 //go:linkname sync_runtime_canSpin sync.runtime_canSpin
 //go:nosplit
 func sync_runtime_canSpin(i int) bool {

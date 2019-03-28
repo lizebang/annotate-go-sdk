@@ -2,6 +2,13 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// 内存分配器
+//
+// 最初基于 tcmalloc，但已经有很大的不同。
+// http://goog-perftools.sourceforge.net/doc/tcmalloc.html
+
+// 主分配器
+
 // Memory allocator.
 //
 // This was originally based on tcmalloc, but has diverged quite a bit.
@@ -213,6 +220,8 @@ const (
 	// 32-bit, however, this is one less than 1<<32 because the
 	// number of bytes in the address space doesn't actually fit
 	// in a uintptr.
+	//
+	// maxAlloc 是分配的最大大小。在 64 位
 	maxAlloc = (1 << heapAddrBits) - (1-_64bit)*1
 
 	// The number of bits in a heap address, the size of heap
@@ -707,6 +716,8 @@ retry:
 }
 
 // base address for all 0-byte allocations
+//
+// 所有 0 字节分配的基地址
 var zerobase uintptr
 
 // nextFreeFast returns the next free object if one is quickly available.
@@ -770,6 +781,10 @@ func (c *mcache) nextFree(spc spanClass) (v gclinkptr, s *mspan, shouldhelpgc bo
 // Allocate an object of size bytes.
 // Small objects are allocated from the per-P cache's free lists.
 // Large objects (> 32 kB) are allocated straight from the heap.
+//
+// 分配一个大小为 size 字节的对象。
+// 小对象从 per-P 缓存的空闲队列中分配。
+// 大对象（> 32kB）直接从堆中分配。
 func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 	if gcphase == _GCmarktermination {
 		throw("mallocgc called with gcphase == _GCmarktermination")

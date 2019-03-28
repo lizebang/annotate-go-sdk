@@ -373,7 +373,7 @@ var listenerBacklog = maxListenerBacklog()
 //
 // Multiple goroutines may invoke methods on a Listener simultaneously.
 //
-// TS: Listener 是面向流协议的通用网络监听器。
+// Listener 是面向流协议的通用网络监听器。
 //
 // 多个 goroutines 可以同时调用 Listener 上的方法。
 type Listener interface {

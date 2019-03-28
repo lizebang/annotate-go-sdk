@@ -68,6 +68,8 @@ type Signal interface {
 }
 
 // Getpid returns the process id of the caller.
+//
+// Getpid 返回调用函数的进程 ID。
 func Getpid() int { return syscall.Getpid() }
 
 // Getppid returns the process id of the caller's parent.

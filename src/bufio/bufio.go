@@ -542,8 +542,13 @@ type Writer struct {
 // NewWriterSize returns a new Writer whose buffer has at least the specified
 // size. If the argument io.Writer is already a Writer with large enough
 // size, it returns the underlying Writer.
+//
+// NewWriterSize 返回一个新的 Writer，其缓冲区至少具有指定的大小。如果参数 io.Writer 已经
+// 是一个带有缓冲区足够大的 Writer，它直接返回底层的 Writer。
 func NewWriterSize(w io.Writer, size int) *Writer {
 	// Is it already a Writer?
+	//
+	// 已经是一个 Writer？
 	b, ok := w.(*Writer)
 	if ok && len(b.buf) >= size {
 		return b

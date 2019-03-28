@@ -72,7 +72,7 @@ func SwapPointer(addr *unsafe.Pointer, new unsafe.Pointer) (old unsafe.Pointer)
 
 // CompareAndSwapInt32 executes the compare-and-swap operation for an int32 value.
 //
-// TS: CompareAndSwapInt32 执行比较并交换一个 int32 值的操作。
+// CompareAndSwapInt32 执行比较并交换一个 int32 值的操作。
 func CompareAndSwapInt32(addr *int32, old, new int32) (swapped bool)
 
 // CompareAndSwapInt64 executes the compare-and-swap operation for an int64 value.

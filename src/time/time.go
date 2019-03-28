@@ -1051,6 +1051,8 @@ func daysIn(m Month, year int) int {
 func now() (sec int64, nsec int32, mono int64)
 
 // Now returns the current local time.
+//
+// Now 返回当前的本地时间。
 func Now() Time {
 	sec, nsec, mono := now()
 	sec += unixToInternal - minWall

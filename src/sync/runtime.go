@@ -22,6 +22,11 @@ func runtime_SemacquireMutex(s *uint32, lifo bool)
 // It is intended as a simple wakeup primitive for use by the synchronization
 // library and should not be used directly.
 // If handoff is true, pass count directly to the first waiter.
+//
+// 如果一个 goroutine 阻塞在 Semacquire 中，Semrelease 将以原子操作的方式增加 *s 并且
+// 通知一个等待的 goroutine。
+// 它旨在为同步库提供一个简单的唤醒原语，并且它不应该被直接使用。
+// 如果 handoff 为 true，
 func runtime_Semrelease(s *uint32, handoff bool)
 
 // Approximation of notifyList in runtime/sema.go. Size and alignment must
@@ -55,7 +60,7 @@ func init() {
 
 // Active spinning runtime support.
 // runtime_canSpin returns true is spinning makes sense at the moment.
-// TS: 主动自旋 运行时支持。
+// 主动自旋 运行时支持。
 // runtime_canSpin 返回 true 代表此时自旋是有意义的。
 func runtime_canSpin(i int) bool
 

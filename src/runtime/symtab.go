@@ -606,6 +606,11 @@ func moduledataverify1(datap *moduledata) {
 //
 // If pc represents multiple functions because of inlining, it returns
 // the *Func describing the outermost function.
+//
+// FuncForPC 返回一个包含给定程序计数器 pc 地址的 *Func，它描述了此函数。如果该
+// pc 没有对应的 *Func，则返回 nil。
+//
+// 如果 pc 由于内联而代表多个函数，则返回描述最外层函数的 *Func。
 func FuncForPC(pc uintptr) *Func {
 	return findfunc(pc)._Func()
 }
@@ -627,6 +632,9 @@ func (f *Func) Entry() uintptr {
 // source code corresponding to the program counter pc.
 // The result will not be accurate if pc is not a program
 // counter within f.
+//
+// FileLine 返回程序计数器 pc 对应的源码文件名和行号。如果 pc 不是
+// f 内的程序计数器，则结果是不精确的。
 func (f *Func) FileLine(pc uintptr) (file string, line int) {
 	// Pass strict=false here, because anyone can call this function,
 	// and they might just be wrong about targetpc belonging to f.

@@ -5,6 +5,8 @@
 package bytes
 
 // Simple byte buffer for marshaling data.
+//
+// 用于编排数据的简单字节缓冲区。
 
 import (
 	"errors"
@@ -14,37 +16,60 @@ import (
 
 // A Buffer is a variable-sized buffer of bytes with Read and Write methods.
 // The zero value for Buffer is an empty buffer ready to use.
+//
+// Buffer 是一个大小可变的、具有 Read 和 Write 方法的字节缓冲区。
+// Buffer 的零值是一个可以使用的空字节缓冲区。
 type Buffer struct {
-	buf       []byte   // contents are the bytes buf[off : len(buf)]
-	off       int      // read at &buf[off], write at &buf[len(buf)]
+	// 内容是 bytes buf[off:len(buf)]
+	buf []byte // contents are the bytes buf[off : len(buf)]
+	// 从 &buf[off] 开始读，从 &buf[len(buf)] 开始写
+	off int // read at &buf[off], write at &buf[len(buf)]
+	// 内存保存的第一部分，让小的缓冲区避免去分配。
 	bootstrap [64]byte // memory to hold first slice; helps small buffers avoid allocation.
-	lastRead  readOp   // last read operation, so that Unread* can work correctly.
+	// 上次读取操作，所以 Unread* 可以正常工作。
+	lastRead readOp // last read operation, so that Unread* can work correctly.
 
 	// FIXME: it would be advisable to align Buffer to cachelines to avoid false
 	// sharing.
+	//
+	// FIXME: 建议将 Buffer 与 cachelines 对齐以避免 false sharing。
 }
 
 // The readOp constants describe the last action performed on
 // the buffer, so that UnreadRune and UnreadByte can check for
 // invalid usage. opReadRuneX constants are chosen such that
 // converted to int they correspond to the rune size that was read.
+//
+// readOp 常量描述了缓冲区执行的最后一个操作，所以 UnreadRune 和 UnreadByte 可以检查无效操作。
+// 选择 opReadRuneX 常量，将其转换为 int，数值对应文字的大小。
 type readOp int8
 
 // Don't use iota for these, as the values need to correspond with the
 // names and comments, which is easier to see when being explicit.
+//
+// 不要使用 iota 为这些量初始化，因为这些值需要与其名称和注释一一对应，显式时更容易看懂。
 const (
-	opRead      readOp = -1 // Any other read operation.
-	opInvalid   readOp = 0  // Non-read operation.
-	opReadRune1 readOp = 1  // Read rune of size 1.
-	opReadRune2 readOp = 2  // Read rune of size 2.
-	opReadRune3 readOp = 3  // Read rune of size 3.
-	opReadRune4 readOp = 4  // Read rune of size 4.
+	// 任何其他读操作。
+	opRead readOp = -1 // Any other read operation.
+	// 非读取操作。
+	opInvalid readOp = 0 // Non-read operation.
+	// 读取大小为 1 的文字。
+	opReadRune1 readOp = 1 // Read rune of size 1.
+	// 读取大小为 2 的文字。
+	opReadRune2 readOp = 2 // Read rune of size 2.
+	// 读取大小为 3 的文字。
+	opReadRune3 readOp = 3 // Read rune of size 3.
+	// 读取大小为 4 的文字。
+	opReadRune4 readOp = 4 // Read rune of size 4.
 )
 
 // ErrTooLarge is passed to panic if memory cannot be allocated to store data in a buffer.
+//
+// 如果无法分配内存将数据储存到缓冲区中，则将 ErrTooLarge 传给 panic。
 var ErrTooLarge = errors.New("bytes.Buffer: too large")
 var errNegativeRead = errors.New("bytes.Buffer: reader returned negative count from Read")
 
+// IMP: int 能表示的最大值。
 const maxInt = int(^uint(0) >> 1)
 
 // Bytes returns a slice of length b.Len() holding the unread portion of the buffer.
@@ -52,25 +77,38 @@ const maxInt = int(^uint(0) >> 1)
 // only until the next call to a method like Read, Write, Reset, or Truncate).
 // The slice aliases the buffer content at least until the next buffer modification,
 // so immediate changes to the slice will affect the result of future reads.
+//
+// Bytes 返回长度为 b.Len() 持有缓冲区未读部分的切片。
+// 切片仅在下一次修改缓冲区之前有效（也就是说，直到下一次调用 Read、Write、Reset、Truncate 之类的方法）。
+// 切片在下一次修改缓冲区之前是缓冲区内容的别名，因此对切片的即时改变将影响将来读取的结果。
+// IMP: 此处的缓冲区指的是 Buffer.buf。
 func (b *Buffer) Bytes() []byte { return b.buf[b.off:] }
 
 // String returns the contents of the unread portion of the buffer
 // as a string. If the Buffer is a nil pointer, it returns "<nil>".
 //
 // To build strings more efficiently, see the strings.Builder type.
+//
+// TSK: String 返回
 func (b *Buffer) String() string {
 	if b == nil {
 		// Special case, useful in debugging.
+		//
+		// 特殊情况，在调试时很有用。
 		return "<nil>"
 	}
 	return string(b.buf[b.off:])
 }
 
 // empty returns whether the unread portion of the buffer is empty.
+//
+// empty 检测是否缓冲区未读部分为空。
 func (b *Buffer) empty() bool { return len(b.buf) <= b.off }
 
 // Len returns the number of bytes of the unread portion of the buffer;
 // b.Len() == len(b.Bytes()).
+//
+// Len 返回缓冲区未读部分的字节数，b.Len() == len(b.Bytes())。
 func (b *Buffer) Len() int { return len(b.buf) - b.off }
 
 // Cap returns the capacity of the buffer's underlying byte slice, that is, the
@@ -95,6 +133,9 @@ func (b *Buffer) Truncate(n int) {
 // Reset resets the buffer to be empty,
 // but it retains the underlying storage for use by future writes.
 // Reset is the same as Truncate(0).
+//
+// Reset 将缓冲区重置为空，但是保留底层存储空间供将来的写入使用。
+// Reset 与 Truncate(0) 相同。
 func (b *Buffer) Reset() {
 	b.buf = b.buf[:0]
 	b.off = 0

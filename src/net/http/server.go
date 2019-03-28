@@ -33,7 +33,7 @@ import (
 
 // Errors used by the HTTP server.
 //
-// TS: HTTP server 使用的 Errors。
+// HTTP server 使用的 Errors。
 var (
 	// ErrBodyNotAllowed is returned by ResponseWriter.Write calls
 	// when the HTTP method or response code does not permit a
@@ -247,7 +247,7 @@ var (
 	// started the handler. The associated value will be of
 	// type *Server.
 	//
-	// TS: ServerContextKey 是一个 context key。
+	// ServerContextKey 是一个 context key。
 	// 它在 HTTP 处理函数中被 context.WithValue 使用，以便在处理函数中访问 server。
 	// 它关联的值将是 *Server 类型。
 	ServerContextKey = &contextKey{"http-server"}
@@ -264,7 +264,7 @@ var (
 
 // A conn represents the server side of an HTTP connection.
 //
-// TS: conn 代表 HTTP 连接的服务端。
+// conn 代表 HTTP 连接的服务端。
 type conn struct {
 	// server is the server on which the connection arrived.
 	// Immutable; never nil.
@@ -670,7 +670,7 @@ func (w *response) ReadFrom(src io.Reader) (n int64, err error) {
 // debugServerConnections controls whether all server connections are wrapped
 // with a verbose logging wrapper.
 //
-// TS: debugServerConnections 控制是否所有的服务器连接都记录详细的日志。
+// debugServerConnections 控制是否所有的服务器连接都记录详细的日志。
 const debugServerConnections = false
 
 // Create new connection from rwc.
@@ -2524,7 +2524,7 @@ func ServeTLS(l net.Listener, handler Handler, certFile, keyFile string) error {
 // A Server defines parameters for running an HTTP server.
 // The zero value for Server is a valid configuration.
 //
-// TS: Server 包含用于运行 HTTP 服务器的参数。
+// Server 包含用于运行 HTTP 服务器的参数。
 // Server 的零值是有效参数。
 type Server struct {
 	// 用于监听的 TCP 地址，如果为空是 ":http"
@@ -2801,7 +2801,7 @@ func (s *Server) closeListenersLocked() error {
 // A ConnState represents the state of a client connection to a server.
 // It's used by the optional Server.ConnState hook.
 //
-// TS: ConnState 代表一个客户端连接到一台服务器的状态。
+// ConnState 代表一个客户端连接到一台服务器的状态。
 // 它通过可选择的 Server.ConnState 钩子函数来被使用。
 type ConnState int
 
@@ -2911,7 +2911,7 @@ func (srv *Server) ListenAndServe() error {
 	return srv.Serve(tcpKeepAliveListener{ln.(*net.TCPListener)})
 }
 
-// TS: 如果非空，将被调用。
+// 如果非空，将被调用。
 var testHookServerServe func(*Server, net.Listener) // used if non-nil
 
 // shouldDoServeHTTP2 reports whether Server.Serve should configure
@@ -2953,7 +2953,7 @@ func (srv *Server) shouldConfigureHTTP2ForServe() bool {
 // ErrServerClosed is returned by the Server's Serve, ServeTLS, ListenAndServe,
 // and ListenAndServeTLS methods after a call to Shutdown or Close.
 //
-// TS: ErrServerClosed 在 Server 的 Serve、ServeTLS、ListenAndServe 和 ListenAndServeTLS
+// ErrServerClosed 在 Server 的 Serve、ServeTLS、ListenAndServe 和 ListenAndServeTLS
 // 方法调用 Shutdown 或 Close 后返回。
 var ErrServerClosed = errors.New("http: Server closed")
 
@@ -2968,7 +2968,7 @@ var ErrServerClosed = errors.New("http: Server closed")
 // Serve always returns a non-nil error and closes l.
 // After Shutdown or Close, the returned error is ErrServerClosed.
 //
-// TS: Serve 从 Listener 接收新的连接，为每个连接创建一个服务 goroutine。
+// Serve 从 Listener 接收新的连接，为每个连接创建一个服务 goroutine。
 // 服务 goroutines 读取请求然后调用 srv.Handler 处理它们。
 //
 // 只有在 Listener 返回 *tls.Conn 连接且在 TLSConfig.NextProtos 中配置了 "h2" 时
@@ -3082,7 +3082,7 @@ func (srv *Server) ServeTLS(l net.Listener, certFile, keyFile string) error {
 //
 // It reports whether the server is still up (not Shutdown or Closed).
 //
-// TS: trackListener 在使用的监听器集合中添加或删除一个 net.Listener。
+// trackListener 在使用的监听器集合中添加或删除一个 net.Listener。
 //
 // 我们在映射集中存储了一个 interface 的指针，以防 net.Listener 无法比较。这是安全的，
 // 因为我们只通过 Serve 调用 trackListener，并且可以使用 track+defer 取消追踪。
@@ -3141,7 +3141,7 @@ func (s *Server) doKeepAlives() bool {
 func (s *Server) shuttingDown() bool {
 	// TODO: replace inShutdown with the existing atomicBool type;
 	// see https://github.com/golang/go/issues/20239#issuecomment-381434582
-	// TS: 用已有的 atomicBool 替换 inShutdown
+	// 用已有的 atomicBool 替换 inShutdown
 	// 请查阅 https://github.com/golang/go/issues/20239#issuecomment-381434582
 	return atomic.LoadInt32(&s.inShutdown) != 0
 }
@@ -3256,7 +3256,7 @@ func (srv *Server) setupHTTP2_ServeTLS() error {
 // TestConcurrentServerServe in server_test.go demonstrate some
 // of the supported use cases and motivations.
 //
-// TS: setupHTTP2_Serve 由 (*Server).Serve 调用并且使用一种比 setupHTTP2_ServeTLS
+// setupHTTP2_Serve 由 (*Server).Serve 调用并且使用一种比 setupHTTP2_ServeTLS
 // 更加保守到策略在 srv 上配置 HTTP/2，因为 Serve 是在 tls.Listen 之后调用的，并且它们
 // 可能被同时调用。请查看 shouldConfigureHTTP2ForServe。
 //
@@ -3449,7 +3449,7 @@ func (ln tcpKeepAliveListener) Accept() (net.Conn, error) {
 // onceCloseListener wraps a net.Listener, protecting it from multiple Close calls.
 // multiple Close calls.
 //
-// TS: onceCloseListener 包装 net.Listener，防止多次调用 Close。
+// onceCloseListener 包装 net.Listener，防止多次调用 Close。
 type onceCloseListener struct {
 	net.Listener
 	once     sync.Once
@@ -3503,7 +3503,7 @@ func (h initNPNRequest) ServeHTTP(rw ResponseWriter, req *Request) {
 
 // loggingConn is used for debugging.
 //
-// TS: loggingConn 用于调试。
+// loggingConn 用于调试。
 type loggingConn struct {
 	name string
 	net.Conn

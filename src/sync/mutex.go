@@ -150,7 +150,7 @@ func (m *Mutex) Lock() {
 		// 在饥饿模式下，不能自旋，CPU 所有权移交给等待的 goroutine，所以我们将不能获得到互斥锁。
 		//
 		// old&(mutexLocked|mutexStarving) == mutexLocked 判断是否为饥饿模式，饥饿模式下为 false。
-		//runtime_canSpin(iter) 判断是否能进行自旋。
+		// runtime_canSpin(iter) 判断是否能进行自旋。
 		if old&(mutexLocked|mutexStarving) == mutexLocked && runtime_canSpin(iter) {
 			// Active spinning makes sense.
 			// Try to set mutexWoken flag to inform Unlock
@@ -202,10 +202,12 @@ func (m *Mutex) Lock() {
 			if new&mutexWoken == 0 {
 				throw("sync: inconsistent mutex state")
 			}
+			// new = new & (new ^ mutexWoken)
 			new &^= mutexWoken
 		}
 		if atomic.CompareAndSwapInt32(&m.state, old, new) {
 			if old&(mutexLocked|mutexStarving) == 0 {
+				// 使用 CAS 给 mutex 上锁
 				break // locked the mutex with CAS
 			}
 			// If we were already waiting before, queue at the front of the queue.
@@ -269,6 +271,7 @@ func (m *Mutex) Unlock() {
 	//
 	// 快速途径：减去 mutexLocked。
 	new := atomic.AddInt32(&m.state, -mutexLocked)
+	// 解锁前未上锁，将抛出异常。
 	if (new+mutexLocked)&mutexLocked == 0 {
 		throw("sync: unlock of unlocked mutex")
 	}
@@ -281,10 +284,21 @@ func (m *Mutex) Unlock() {
 			// goroutine to the next waiter. We are not part of this chain,
 			// since we did not observe mutexStarving when we unlocked the mutex above.
 			// So get off the way.
+			//
+			// 如果没有等待的 goroutine 或者有一个 goroutine 已经被唤醒/抢占了锁，这时就不需要唤醒任何 goroutine。
+			// 在饥饿模式下，所有权直接从解锁的 goroutine 移交给下一个等待的 goroutine。我们不是位于饥饿模式的分支，
+			// 因为在上面解锁 mutex 时，我们并没有观察到 mutexStarving。所以直接返回从此分支离开。
+			//
+			// old>>mutexWaiterShift == 0 没有等待的 goroutine。
+			// TSK: old&(mutexLocked|mutexWoken|mutexStarving) != 0
 			if old>>mutexWaiterShift == 0 || old&(mutexLocked|mutexWoken|mutexStarving) != 0 {
 				return
 			}
 			// Grab the right to wake someone.
+			//
+			// 抢占机会唤醒某个 goroutine。
+			//
+			// TSK: 1001 -> 1000 -> new(0010) 此情况下比较复杂
 			new = (old - 1<<mutexWaiterShift) | mutexWoken
 			if atomic.CompareAndSwapInt32(&m.state, old, new) {
 				runtime_Semrelease(&m.sema, false)
@@ -297,6 +311,10 @@ func (m *Mutex) Unlock() {
 		// Note: mutexLocked is not set, the waiter will set it after wakeup.
 		// But mutex is still considered locked if mutexStarving is set,
 		// so new coming goroutines won't acquire it.
+		//
+		// 饥饿模式：将 mutex 的所有权移交给下一个等待到 goroutine。
+		// 注意：mutexLocked 未被设置，等待的 goroutine 在被唤醒后将设置它。
+		// 但是如果 mutexStarving 被设置，mutex 仍然被认为是锁定的，所以新到的 goroutines 不会获得它。
 		runtime_Semrelease(&m.sema, true)
 	}
 }

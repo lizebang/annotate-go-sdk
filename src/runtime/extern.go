@@ -208,6 +208,13 @@ func Caller(skip int) (pc uintptr, file string, line int, ok bool) {
 // directly is discouraged, as is using FuncForPC on any of the
 // returned PCs, since these cannot account for inlining or return
 // program counter adjustment.
+//
+// TSK: Callers 将在当前 goroutine 堆栈中函数调用情况的程序计数器填充切片 pc 中。 参数 skip 是记录到计
+// 数器前跳过的帧数，0 表明 Callers 函数本身的帧数，而 1 表明 Callers 函数调用者的帧数。
+// 它返回写入 pc 的条目数。
+//
+// 为了得到 PCs 对应的信息，如函数名和行号，可以使用 CallersFrames 函数。CallersFrames
+//
 func Callers(skip int, pc []uintptr) int {
 	// runtime.callers uses pc.array==nil as a signal
 	// to print a stack trace. Pick off 0-length pc here

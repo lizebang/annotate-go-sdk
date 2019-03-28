@@ -8,10 +8,17 @@
 	Packages that import unsafe may be non-portable and are not protected by the
 	Go 1 compatibility guidelines.
 */
+/*
+	unsafe 包包含围绕 Go 程序类型安全的操作。
+
+	使用 unsafe 包的软件包可能是不可能移植的，不受 Go 1 兼容性指南保护。
+*/
 package unsafe
 
 // ArbitraryType is here for the purposes of documentation only and is not actually
 // part of the unsafe package. It represents the type of an arbitrary Go expression.
+//
+// ArbitraryType 仅用于文档目的，并且它事实上不是 unsafe 包的一部分。它表示任意 Go 表达式的类型。
 type ArbitraryType int
 
 // Pointer represents a pointer to an arbitrary type. There are four special operations
@@ -178,6 +185,8 @@ type Pointer *ArbitraryType
 // The size does not include any memory possibly referenced by x.
 // For instance, if x is a slice, Sizeof returns the size of the slice
 // descriptor, not the size of the memory referenced by the slice.
+//
+// Sizeof 测定任意类型的表达式 x，并返回假设
 func Sizeof(x ArbitraryType) uintptr
 
 // Offsetof returns the offset within the struct of the field represented by x,

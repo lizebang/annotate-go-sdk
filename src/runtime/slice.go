@@ -16,6 +16,7 @@ type slice struct {
 }
 
 // An notInHeapSlice is a slice backed by go:notinheap memory.
+// notInHeapSlice 是由 go:notinheap 内存支持的切片。
 type notInHeapSlice struct {
 	array *notInHeap
 	len   int
@@ -24,6 +25,9 @@ type notInHeapSlice struct {
 
 // maxElems is a lookup table containing the maximum capacity for a slice.
 // The index is the size of the slice element.
+//
+// maxElems 是一个包含切片最大容量的查找表。
+// 索引是切片元素的大小。
 var maxElems = [...]uintptr{
 	^uintptr(0),
 	maxAlloc / 1, maxAlloc / 2, maxAlloc / 3, maxAlloc / 4,
@@ -37,6 +41,8 @@ var maxElems = [...]uintptr{
 }
 
 // maxSliceCap returns the maximum capacity for a slice.
+//
+// maxSliceCap 返回切片的最大容量。
 func maxSliceCap(elemsize uintptr) uintptr {
 	if elemsize < uintptr(len(maxElems)) {
 		return maxElems[elemsize]
@@ -58,6 +64,11 @@ func makeslice(et *_type, len, cap int) slice {
 	// when someone does make([]T, bignumber). 'cap out of range' is true too,
 	// but since the cap is only being supplied implicitly, saying len is clearer.
 	// See issue 4085.
+	//
+	// NOTE: 这里 len > maxElements 的检查不是绝对必要的，但是有人使用 make([]T, bignumber) 它
+	// 确实会产生 'len out of range' 的错误而不是 'cap out of range'。'cap out of range' 也是
+	// 如此，但是因为 cap 只是隐含的提供，len 更清楚。
+	// 请看 issue 4085。
 	maxElements := maxSliceCap(et.size)
 	if len < 0 || uintptr(len) > maxElements {
 		panicmakeslicelen()
@@ -71,6 +82,7 @@ func makeslice(et *_type, len, cap int) slice {
 	return slice{p, len, cap}
 }
 
+// TSK: 此处 int 与平台无关
 func makeslice64(et *_type, len64, cap64 int64) slice {
 	len := int(len64)
 	if int64(len) != len64 {
@@ -95,6 +107,8 @@ func makeslice64(et *_type, len64, cap64 int64) slice {
 // to calculate where to write new values during an append.
 // TODO: When the old backend is gone, reconsider this decision.
 // The SSA backend might prefer the new length or to return only ptr/cap and save stack space.
+//
+// growslice
 func growslice(et *_type, old slice, cap int) slice {
 	if raceenabled {
 		callerpc := getcallerpc()
